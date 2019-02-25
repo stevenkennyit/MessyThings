@@ -1,3 +1,5 @@
+#Credit to "halr9000"
+
 ######## DO NOT REMOVE! This will allow for self-signed SSL certs to work and other stuff ########
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 [System.Net.ServicePointManager]::MaxServicePointIdleTime = 5000000
