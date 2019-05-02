@@ -1,0 +1,12 @@
+#Command: regsearch,<searchBase>, <key/value>
+function Search-RegistryC($arg1, $arg2){
+$searchBase = $arg1
+    $keyValue = $arg2
+    $res = gci $searchBase -Recurse -ErrorAction SilentlyContinue | ? {$_.property -eq $keyValue} 
+    if($res){
+        write-host "Found key" $keyValue "here:" $res.Name -ForegroundColor Green
+    }
+    else{
+        Write-Host "Key" $keyValue "not found!" -ForegroundColor Red
+    }
+}
