@@ -11,7 +11,7 @@ $SB = {
         "Success!" | Set-Content c:\temp\CIM_Log.txt 
     }
     else{
-        "Fail!" | Set-Content c:\temp\CIM_Log.txt 
+        $Error[0] | Set-Content c:\temp\CIM_Log.txt 
     }
 }
 # End of script block
