@@ -1,0 +1,28 @@
+$creds = Get-Credential -Credential useraccount #Must have local admin on target box
+$target = "computerName"
+$sessionOption = New-CimSessionOption -Protocol Dcom
+$session = New-CimSession -ComputerName $target -Credential $creds -SessionOption $sessionOption
+#Below is a script block (testing). These are commands to be executed on remote host via wmi
+$SB = {
+    $res = Invoke-WebRequest google.com 
+    $res | Set-Content c:\temp\webresult.txt 
+
+    if($res){
+        "Success!" | Set-Content c:\temp\CIM_Log.txt 
+    }
+    else{
+        "Fail!" | Set-Content c:\temp\CIM_Log.txt 
+    }
+}
+# End of script block
+$SBString = $SB.ToString()
+$SBBytes = [System.Text.Encoding]::Unicode.GetBytes($SBString)
+$SBEncoded = [Convert]::ToBase64String($SBBytes)
+$Command = "powershell.exe -encodedCommand $SBEncoded -ExecutionPolicy Bypass -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden"
+$CimMethodParams = @{
+    ClassName  = 'Win32_Process'
+    MethodName = 'Create'
+    Arguments  = @{CommandLine = "powershell.exe -command $command"}
+    CimSession = $Session 
+}
+Invoke-CimMethod @CimMethodParams
