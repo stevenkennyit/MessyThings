@@ -1,0 +1,1 @@
+﻿whoami | out-file c:\temp\whotest.txt
